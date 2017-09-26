@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdaterNET", "UpdaterNET\UpdaterNET.csproj", "{B2999E63-9029-4514-8FBE-D101821178C1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateMakerNET", "UpdateMakerNET\UpdateMakerNET.csproj", "{103E1A9D-374C-4E59-A23B-0F7D21C10A22}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B2999E63-9029-4514-8FBE-D101821178C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2999E63-9029-4514-8FBE-D101821178C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2999E63-9029-4514-8FBE-D101821178C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{103E1A9D-374C-4E59-A23B-0F7D21C10A22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{103E1A9D-374C-4E59-A23B-0F7D21C10A22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{103E1A9D-374C-4E59-A23B-0F7D21C10A22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{103E1A9D-374C-4E59-A23B-0F7D21C10A22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
