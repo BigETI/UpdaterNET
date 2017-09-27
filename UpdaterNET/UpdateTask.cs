@@ -6,7 +6,6 @@ using System.IO.Compression;
 using System.Net;
 using System.Runtime.Serialization.Json;
 using System.Security.Cryptography;
-using System.Windows.Forms;
 
 /// <summary>
 /// Updater .NET namespace
@@ -16,19 +15,24 @@ namespace UpdaterNET
     /// <summary>
     /// Update class
     /// </summary>
-    public class Update
+    public class UpdateTask
     {
         /// <summary>
-        /// Updates installed event handler delegate
+        /// Finished update task event handler delegate
         /// </summary>
         /// <param name="sender">Sender</param>
         /// <param name="e">Event arguments</param>
-        public delegate void UpdatesInstalledEventHandler(object sender, EventArgs e);
+        public delegate void UpdateTaskFinishedEventHandler(object sender, UpdateTaskFinishedEventArgs e);
 
         /// <summary>
-        /// On updates installed event
+        /// On download progress changed event handler
         /// </summary>
-        public event UpdatesInstalledEventHandler onUpdatesInstalled;
+        public event DownloadProgressChangedEventHandler DownloadProgressChanged;
+
+        /// <summary>
+        /// On update task finished event handler
+        /// </summary>
+        public event UpdateTaskFinishedEventHandler UpdateTaskFinished;
 
         /// <summary>
         /// Serializer
@@ -110,7 +114,7 @@ namespace UpdaterNET
         /// </summary>
         /// <param name="endpoint">Endpoint</param>
         /// <param name="timeout">Timeout in milliseconds</param>
-        public Update(string endpoint, string pathToExe, int timeout = 3000)
+        public UpdateTask(string endpoint, string pathToExe, int timeout = 3000)
         {
             this.endpoint = endpoint;
             string version;
@@ -128,7 +132,7 @@ namespace UpdaterNET
                 }
                 catch
                 {
-                    Application.Exit();
+                    //
                 }
             }
         }
@@ -136,16 +140,14 @@ namespace UpdaterNET
         /// <summary>
         /// Install updates
         /// </summary>
-        public void InstallUpdates(DownloadProgressChangedEventHandler downloadProgressChangedEventHandler = null, UpdatesInstalledEventHandler updatesInstalledEventHandler = null)
+        public void InstallUpdates()
         {
-            onUpdatesInstalled += updatesInstalledEventHandler;
             if (updateData == null)
-                onUpdatesInstalled.Invoke(this, new EventArgs());
+                UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(true, null));
             else
             {
                 WebClient wc = new WebClient();
-                if (downloadProgressChangedEventHandler != null)
-                    wc.DownloadProgressChanged += downloadProgressChangedEventHandler;
+                wc.DownloadProgressChanged += OnDownloadProgressChanged;
                 wc.DownloadFileCompleted += OnDownloadFileCompleted;
                 try
                 {
@@ -155,10 +157,19 @@ namespace UpdaterNET
                 }
                 catch (Exception e)
                 {
-                    MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    onUpdatesInstalled.Invoke(this, new EventArgs());
+                    UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(true, e.Message));
                 }
             }
+        }
+
+        /// <summary>
+        /// On download progress changed event
+        /// </summary>
+        /// <param name="sender">Sender</param>
+        /// <param name="e">Event arguments</param>
+        private void OnDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            DownloadProgressChanged.Invoke(sender, e);
         }
 
         /// <summary>
@@ -188,14 +199,14 @@ namespace UpdaterNET
         /// </summary>
         /// <param name="path">Path</param>
         /// <returns>SHA512 in Base64</returns>
-        private static string SHA512FromFile(string path)
+        private static string SHA512FromFile(string path, ref string error)
         {
             string ret = "";
             if (File.Exists(path))
             {
                 SHA512 sha512 = System.Security.Cryptography.SHA512.Create();
                 if (sha512 == null)
-                    MessageBox.Show("Failed to create SHA512 instance.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error = "Failed to create SHA512 instance.";
                 else
                 {
                     if (File.Exists(path))
@@ -206,7 +217,7 @@ namespace UpdaterNET
                         }
                     }
                     else
-                        MessageBox.Show("File \"" + path + "\" not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        error = "File \"" + path + "\" not found.";
                 }
             }
             return ret;
@@ -219,14 +230,14 @@ namespace UpdaterNET
         /// <param name="pathToExe">Path to executable</param>
         /// <param name="pathToArchive">Path to archive</param>
         /// <param name="uri">URI</param>
-        public static void GenerateUpdateJSON(string destinationPath, string pathToExe, string pathToArchive, string uri)
+        public static void GenerateUpdateJSON(string destinationPath, string pathToExe, string pathToArchive, string uri, ref string error)
         {
             UpdateDataContract update_data = new UpdateDataContract();
             update_data.uri = uri;
             if (File.Exists(pathToExe))
                 GetFileVersionInfo(pathToExe, out update_data.versionNumber, out update_data.version);
             if (File.Exists(pathToArchive))
-                update_data.sha512 = SHA512FromFile(pathToArchive);
+                update_data.sha512 = SHA512FromFile(pathToArchive, ref error);
             using (StreamWriter writer = new StreamWriter(destinationPath))
             {
                 serializer.WriteObject(writer.BaseStream, update_data);
@@ -240,107 +251,137 @@ namespace UpdaterNET
         /// <param name="e">Asynchronous operation event arguments</param>
         private void OnDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
-            try
+            bool is_canceled = e.Cancelled;
+            string error = null;
+            if (!(e.Cancelled))
             {
-                // Verify checksum
-                string update_file_name = "./updates/" + updateData.version + ".zip";
-                string hash = SHA512FromFile(update_file_name);
-                if (hash.Length > 0)
+                try
                 {
-                    if (hash == updateData.sha512)
+                    // Verify checksum
+                    string update_file_name = "./updates/" + updateData.version + ".zip";
+                    string hash = SHA512FromFile(update_file_name, ref error);
+                    if (error == null)
                     {
-                        // Backup old files
-                        if (!(Directory.Exists("./backups")))
-                            Directory.CreateDirectory("./backups");
-                        string backup_file_name = "./backups/pre." + updateData.version + ".zip";
-                        try
+                        if (hash.Length > 0)
                         {
-                            if (File.Exists(backup_file_name))
-                                File.Delete(backup_file_name);
-                            using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Create))
+                            if (hash == updateData.sha512)
                             {
-                                string[] file_names = Directory.GetFiles(".");
-                                string current_directory = Directory.GetCurrentDirectory();
-                                if (current_directory.Length > 0)
-                                {
-                                    if (current_directory[current_directory.Length - 1] != Path.DirectorySeparatorChar)
-                                        current_directory += Path.DirectorySeparatorChar;
-                                }
-                                foreach (string file_name in file_names)
-                                {
-                                    if ((!(file_name.StartsWith("backups" + Path.DirectorySeparatorChar))) && (!(file_name.StartsWith("updates" + Path.DirectorySeparatorChar))))
-                                    {
-                                        if (file_name.StartsWith(current_directory))
-                                            zip_archive.CreateEntryFromFile(file_name, file_name.Substring(current_directory.Length).Replace('\\', '/'));
-                                    }
-                                }
-                            }
-
-                            // Unzip updates
-                            try
-                            {
-                                using (ZipArchive zip_archive = ZipFile.Open(update_file_name, ZipArchiveMode.Read))
-                                {
-                                    foreach (ZipArchiveEntry entry in zip_archive.Entries)
-                                    {
-                                        string entry_name = entry.FullName.Replace('\\', '/');
-                                        using (Stream reader = entry.Open())
-                                        {
-                                            using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
-                                            {
-                                                int b;
-                                                while ((b = reader.ReadByte()) != -1)
-                                                    file_stream.WriteByte((byte)b);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                // Revert changes
+                                // Backup old files
+                                if (!(Directory.Exists("./backups")))
+                                    Directory.CreateDirectory("./backups");
+                                string backup_file_name = "./backups/pre." + updateData.version + ".zip";
                                 try
                                 {
                                     if (File.Exists(backup_file_name))
+                                        File.Delete(backup_file_name);
+                                    using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Create))
                                     {
-                                        using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Read))
+                                        string[] file_names = Directory.GetFiles(".");
+                                        string current_directory = Directory.GetCurrentDirectory();
+                                        if (current_directory.Length > 0)
+                                        {
+                                            if (current_directory[current_directory.Length - 1] != Path.DirectorySeparatorChar)
+                                                current_directory += Path.DirectorySeparatorChar;
+                                        }
+                                        foreach (string file_name in file_names)
+                                        {
+                                            if ((!(file_name.StartsWith("backups" + Path.DirectorySeparatorChar))) && (!(file_name.StartsWith("updates" + Path.DirectorySeparatorChar))))
+                                            {
+                                                if (file_name.StartsWith(current_directory))
+                                                    zip_archive.CreateEntryFromFile(file_name, file_name.Substring(current_directory.Length).Replace('\\', '/'));
+                                            }
+                                        }
+                                    }
+
+                                    // Unzip updates
+                                    try
+                                    {
+                                        using (ZipArchive zip_archive = ZipFile.Open(update_file_name, ZipArchiveMode.Read))
                                         {
                                             foreach (ZipArchiveEntry entry in zip_archive.Entries)
                                             {
                                                 string entry_name = entry.FullName.Replace('\\', '/');
                                                 using (Stream reader = entry.Open())
                                                 {
-                                                    using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
+                                                    try
                                                     {
-                                                        int b;
-                                                        while ((b = reader.ReadByte()) != -1)
-                                                            file_stream.WriteByte((byte)b);
+                                                        using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
+                                                        {
+                                                            int b;
+                                                            while ((b = reader.ReadByte()) != -1)
+                                                                file_stream.WriteByte((byte)b);
+                                                        }
+                                                    }
+                                                    catch
+                                                    {
+                                                        //
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                    catch
+                                    {
+                                        // Revert changes
+                                        try
+                                        {
+                                            if (File.Exists(backup_file_name))
+                                            {
+                                                using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Read))
+                                                {
+                                                    foreach (ZipArchiveEntry entry in zip_archive.Entries)
+                                                    {
+                                                        string entry_name = entry.FullName.Replace('\\', '/');
+                                                        using (Stream reader = entry.Open())
+                                                        {
+                                                            try
+                                                            {
+                                                                using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
+                                                                {
+                                                                    int b;
+                                                                    while ((b = reader.ReadByte()) != -1)
+                                                                        file_stream.WriteByte((byte)b);
+                                                                }
+                                                            }
+                                                            catch
+                                                            {
+                                                                //
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            is_canceled = true;
+                                            error = "Attempt on reverting changes failed.\r\n\r\nBackup file: " + backup_file_name;
+                                        }
+                                    }
                                 }
                                 catch
                                 {
-                                    MessageBox.Show("Attempt on reverting changes failed.\r\n\r\nBackup file: " + backup_file_name, "Fatal error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    is_canceled = true;
+                                    error = "Can't create backup from files.";
                                 }
                             }
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Can't create backup from files.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            else
+                            {
+                                is_canceled = true;
+                                error = "SHA512 hash for file \"" + update_file_name + "\" is invalid.";
+                            }
                         }
                     }
                     else
-                        MessageBox.Show("SHA512 hash for file \"" + update_file_name + "\" is invalid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        is_canceled = true;
+                }
+                catch (Exception _e)
+                {
+                    is_canceled = true;
+                    error = _e.Message;
                 }
             }
-            catch (Exception _e)
-            {
-                MessageBox.Show(_e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            onUpdatesInstalled.Invoke(this, new EventArgs());
+            UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(is_canceled, error));
         }
     }
 }

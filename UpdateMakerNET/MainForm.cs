@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Windows.Forms;
+using UpdaterNET;
 
 /// <summary>
 /// Update maker .NET namespace
@@ -129,7 +130,10 @@ namespace UpdateMakerNET
             {
                 MessageBox.Show(_e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            UpdaterNET.Update.GenerateUpdateJSON(destination_directory + "update.json", exeFileSingleLineTextField.Text, archive_path, urlSingleLineTextField.Text);
+            string error = null;
+            UpdateTask.GenerateUpdateJSON(destination_directory + "update.json", exeFileSingleLineTextField.Text, archive_path, urlSingleLineTextField.Text, ref error);
+            if (error != null)
+                MessageBox.Show(error, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         /// <summary>
