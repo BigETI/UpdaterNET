@@ -202,23 +202,27 @@ namespace UpdaterNET
         private static string SHA512FromFile(string path, ref string error)
         {
             string ret = "";
-            if (File.Exists(path))
+            try
             {
-                SHA512 sha512 = System.Security.Cryptography.SHA512.Create();
-                if (sha512 == null)
-                    error = "Failed to create SHA512 instance.";
-                else
+                if (File.Exists(path))
                 {
-                    if (File.Exists(path))
+                    using (SHA512 sha512 = System.Security.Cryptography.SHA512.Create())
                     {
-                        using (StreamReader reader = new StreamReader(path))
+                        if (File.Exists(path))
                         {
-                            ret = Convert.ToBase64String(sha512.ComputeHash(reader.BaseStream));
+                            using (StreamReader reader = new StreamReader(path))
+                            {
+                                ret = Convert.ToBase64String(sha512.ComputeHash(reader.BaseStream));
+                            }
                         }
+                        else
+                            error = "File \"" + path + "\" not found.";
                     }
-                    else
-                        error = "File \"" + path + "\" not found.";
                 }
+            }
+            catch (Exception e)
+            {
+                error = e.Message;
             }
             return ret;
         }
@@ -252,8 +256,8 @@ namespace UpdaterNET
         private void OnDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
             bool is_canceled = e.Cancelled;
-            string error = null;
-            if (!(e.Cancelled))
+            string error = ((e.Error == null) ? null : e.Error.Message);
+            if ((!is_canceled) && (error == null))
             {
                 try
                 {
