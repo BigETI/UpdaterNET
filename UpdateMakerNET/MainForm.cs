@@ -20,7 +20,7 @@ namespace UpdateMakerNET
         /// <summary>
         /// Files
         /// </summary>
-        private Dictionary<string, string> files = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> files = new Dictionary<string, string>();
 
         /// <summary>
         /// Default constructor
@@ -45,7 +45,9 @@ namespace UpdateMakerNET
             {
                 string key = item.Text;
                 if (files.ContainsKey(key))
+                {
                     files.Remove(key);
+                }
             }
             ReloadEntries();
         }
@@ -91,9 +93,13 @@ namespace UpdateMakerNET
                 {
                     string entry_name = Path.GetFileName(file_name);
                     if (files.ContainsKey(entry_name))
+                    {
                         files[entry_name] = file_name;
+                    }
                     else
+                    {
                         files.Add(entry_name, file_name);
+                    }
                 }
                 ReloadEntries();
             }
@@ -110,19 +116,25 @@ namespace UpdateMakerNET
             if (destination_directory.Length > 0)
             {
                 if (destination_directory[destination_directory.Length - 1] != Path.DirectorySeparatorChar)
+                {
                     destination_directory += Path.DirectorySeparatorChar;
+                }
             }
             string archive_path = destination_directory + "update.zip";
             try
             {
                 if (File.Exists(archive_path))
+                {
                     File.Delete(archive_path);
+                }
                 using (ZipArchive zip_archive = ZipFile.Open(archive_path, ZipArchiveMode.Create))
                 {
                     foreach (KeyValuePair<string, string> kv in files)
                     {
                         if (File.Exists(kv.Value))
+                        {
                             zip_archive.CreateEntryFromFile(kv.Value, kv.Key);
+                        }
                     }
                 }
             }
@@ -133,7 +145,9 @@ namespace UpdateMakerNET
             string error = null;
             UpdateTask.GenerateUpdateJSON(destination_directory + "update.json", exeFileSingleLineTextField.Text, archive_path, urlSingleLineTextField.Text, ref error);
             if (error != null)
+            {
                 MessageBox.Show(error, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>

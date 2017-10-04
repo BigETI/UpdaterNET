@@ -1,15 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
+/// <summary>
+/// Update maker .NET namespace
+/// </summary>
 namespace UpdateMakerNET
 {
+    /// <summary>
+    /// Program class
+    /// </summary>
     static class Program
     {
         /// <summary>
-        /// Der Haupteinstiegspunkt für die Anwendung.
+        /// Main entry point
         /// </summary>
         [STAThread]
         static void Main()

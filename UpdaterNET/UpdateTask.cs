@@ -42,17 +42,12 @@ namespace UpdaterNET
         /// <summary>
         /// Update data
         /// </summary>
-        private static UpdateDataContract updateData = null;
-
-        /// <summary>
-        /// Endpoint
-        /// </summary>
-        private string endpoint;
+        private UpdateDataContract updateData;
 
         /// <summary>
         /// Original version number
         /// </summary>
-        private uint originalVersionNumber = 0;
+        private uint originalVersionNumber;
 
         /// <summary>
         /// Is update available
@@ -110,13 +105,13 @@ namespace UpdaterNET
         }
 
         /// <summary>
-        /// Constructor
+        /// Initialize object
         /// </summary>
         /// <param name="endpoint">Endpoint</param>
-        /// <param name="timeout">Timeout in milliseconds</param>
-        public UpdateTask(string endpoint, string pathToExe, int timeout = 3000)
+        /// <param name="pathToExe">Path to executable</param>
+        /// <param name="timeout">Timeout</param>
+        private void Init(string endpoint, string pathToExe, int timeout)
         {
-            this.endpoint = endpoint;
             string version;
             GetFileVersionInfo(pathToExe, out originalVersionNumber, out version);
             using (WebClientEx wc = new WebClientEx(timeout))
@@ -138,12 +133,35 @@ namespace UpdaterNET
         }
 
         /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="endpoint">Endpoint</param>
+        /// <param name="pathToExe">Path to executable</param>
+        public UpdateTask(string endpoint, string pathToExe)
+        {
+            Init(endpoint, pathToExe, 3000);
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="endpoint">Endpoint</param>
+        /// <param name="pathToExe">Path to executable</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
+        public UpdateTask(string endpoint, string pathToExe, int timeout)
+        {
+            Init(endpoint, pathToExe, timeout);
+        }
+
+        /// <summary>
         /// Install updates
         /// </summary>
         public void InstallUpdates()
         {
             if (updateData == null)
+            {
                 UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(true, null));
+            }
             else
             {
                 WebClient wc = new WebClient();
@@ -152,7 +170,9 @@ namespace UpdaterNET
                 try
                 {
                     if (!(Directory.Exists("./updates")))
+                    {
                         Directory.CreateDirectory("./updates");
+                    }
                     wc.DownloadFileAsync(new Uri(updateData.uri), "./updates/" + updateData.version + ".zip");
                 }
                 catch (Exception e)
@@ -216,7 +236,9 @@ namespace UpdaterNET
                             }
                         }
                         else
+                        {
                             error = "File \"" + path + "\" not found.";
+                        }
                     }
                 }
             }
@@ -239,9 +261,13 @@ namespace UpdaterNET
             UpdateDataContract update_data = new UpdateDataContract();
             update_data.uri = uri;
             if (File.Exists(pathToExe))
+            {
                 GetFileVersionInfo(pathToExe, out update_data.versionNumber, out update_data.version);
+            }
             if (File.Exists(pathToArchive))
+            {
                 update_data.sha512 = SHA512FromFile(pathToArchive, ref error);
+            }
             using (StreamWriter writer = new StreamWriter(destinationPath))
             {
                 serializer.WriteObject(writer.BaseStream, update_data);
@@ -272,12 +298,16 @@ namespace UpdaterNET
                             {
                                 // Backup old files
                                 if (!(Directory.Exists("./backups")))
+                                {
                                     Directory.CreateDirectory("./backups");
+                                }
                                 string backup_file_name = "./backups/pre." + updateData.version + ".zip";
                                 try
                                 {
                                     if (File.Exists(backup_file_name))
+                                    {
                                         File.Delete(backup_file_name);
+                                    }
                                     using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Create))
                                     {
                                         string[] file_names = Directory.GetFiles(".");
@@ -285,14 +315,18 @@ namespace UpdaterNET
                                         if (current_directory.Length > 0)
                                         {
                                             if (current_directory[current_directory.Length - 1] != Path.DirectorySeparatorChar)
+                                            {
                                                 current_directory += Path.DirectorySeparatorChar;
+                                            }
                                         }
                                         foreach (string file_name in file_names)
                                         {
                                             if ((!(file_name.StartsWith("backups" + Path.DirectorySeparatorChar))) && (!(file_name.StartsWith("updates" + Path.DirectorySeparatorChar))))
                                             {
                                                 if (file_name.StartsWith(current_directory))
+                                                {
                                                     zip_archive.CreateEntryFromFile(file_name, file_name.Substring(current_directory.Length).Replace('\\', '/'));
+                                                }
                                             }
                                         }
                                     }
@@ -313,7 +347,9 @@ namespace UpdaterNET
                                                         {
                                                             int b;
                                                             while ((b = reader.ReadByte()) != -1)
+                                                            {
                                                                 file_stream.WriteByte((byte)b);
+                                                            }
                                                         }
                                                     }
                                                     catch
@@ -344,7 +380,9 @@ namespace UpdaterNET
                                                                 {
                                                                     int b;
                                                                     while ((b = reader.ReadByte()) != -1)
+                                                                    {
                                                                         file_stream.WriteByte((byte)b);
+                                                                    }
                                                                 }
                                                             }
                                                             catch
@@ -377,7 +415,9 @@ namespace UpdaterNET
                         }
                     }
                     else
+                    {
                         is_canceled = true;
+                    }
                 }
                 catch (Exception _e)
                 {

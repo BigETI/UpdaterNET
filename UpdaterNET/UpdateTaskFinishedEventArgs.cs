@@ -13,12 +13,12 @@ namespace UpdaterNET
         /// <summary>
         /// Is canceled
         /// </summary>
-        private bool isCanceled;
+        private readonly bool isCanceled;
 
         /// <summary>
         /// Error
         /// </summary>
-        private string error;
+        private readonly string error;
 
         /// <summary>
         /// Is canceled
@@ -56,7 +56,19 @@ namespace UpdaterNET
         /// <summary>
         /// Update task finished event arguments
         /// </summary>
-        public UpdateTaskFinishedEventArgs(bool isCanceled, string error = null) : base()
+        /// <param name="isCanceled">Is canceled</param>
+        public UpdateTaskFinishedEventArgs(bool isCanceled)
+        {
+            this.isCanceled = isCanceled;
+            error = null;
+        }
+
+        /// <summary>
+        /// Update task finished event arguments
+        /// </summary>
+        /// <param name="isCanceled">Is canceled</param>
+        /// <param name="error">Error</param>
+        public UpdateTaskFinishedEventArgs(bool isCanceled, string error)
         {
             this.isCanceled = isCanceled;
             this.error = error;

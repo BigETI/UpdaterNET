@@ -14,7 +14,7 @@ namespace UpdaterNET
         /// <summary>
         /// Timeout
         /// </summary>
-        private int timeout;
+        private readonly int timeout;
 
         /// <summary>
         /// Constructor
