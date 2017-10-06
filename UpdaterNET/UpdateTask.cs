@@ -310,7 +310,7 @@ namespace UpdaterNET
                                     }
                                     using (ZipArchive zip_archive = ZipFile.Open(backup_file_name, ZipArchiveMode.Create))
                                     {
-                                        string[] file_names = Directory.GetFiles(".");
+                                        string[] file_names = Directory.GetFiles(".", "*", SearchOption.AllDirectories);
                                         string current_directory = Directory.GetCurrentDirectory();
                                         if (current_directory.Length > 0)
                                         {
@@ -321,11 +321,12 @@ namespace UpdaterNET
                                         }
                                         foreach (string file_name in file_names)
                                         {
-                                            if ((!(file_name.StartsWith("backups" + Path.DirectorySeparatorChar))) && (!(file_name.StartsWith("updates" + Path.DirectorySeparatorChar))))
+                                            string path = Path.GetFullPath(file_name);
+                                            if (path.StartsWith(current_directory))
                                             {
-                                                if (file_name.StartsWith(current_directory))
+                                                if (!(path.Contains("backups" + Path.DirectorySeparatorChar)))
                                                 {
-                                                    zip_archive.CreateEntryFromFile(file_name, file_name.Substring(current_directory.Length).Replace('\\', '/'));
+                                                    zip_archive.CreateEntryFromFile(path, path.Substring(current_directory.Length).Replace('\\', '/'));
                                                 }
                                             }
                                         }
