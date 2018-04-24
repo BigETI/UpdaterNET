@@ -13,17 +13,10 @@ using System.Security.Cryptography;
 namespace UpdaterNET
 {
     /// <summary>
-    /// Update class
+    /// Update task class
     /// </summary>
     public class UpdateTask
     {
-        /// <summary>
-        /// Finished update task event handler delegate
-        /// </summary>
-        /// <param name="sender">Sender</param>
-        /// <param name="e">Event arguments</param>
-        public delegate void UpdateTaskFinishedEventHandler(object sender, UpdateTaskFinishedEventArgs e);
-
         /// <summary>
         /// On download progress changed event handler
         /// </summary>
@@ -346,24 +339,21 @@ namespace UpdaterNET
                                                     {
                                                         using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
                                                         {
-                                                            int b;
-                                                            while ((b = reader.ReadByte()) != -1)
-                                                            {
-                                                                file_stream.WriteByte((byte)b);
-                                                            }
+                                                            reader.CopyTo(file_stream);
                                                         }
                                                     }
-                                                    catch
+                                                    catch (Exception ex)
                                                     {
-                                                        //
+                                                        Console.Error.WriteLine(ex.Message);
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                    catch
+                                    catch (Exception ex)
                                     {
                                         // Revert changes
+                                        Console.Error.WriteLine(ex.Message);
                                         try
                                         {
                                             if (File.Exists(backup_file_name))
@@ -379,16 +369,12 @@ namespace UpdaterNET
                                                             {
                                                                 using (FileStream file_stream = new FileStream("./" + entry_name, FileMode.Create))
                                                                 {
-                                                                    int b;
-                                                                    while ((b = reader.ReadByte()) != -1)
-                                                                    {
-                                                                        file_stream.WriteByte((byte)b);
-                                                                    }
+                                                                    reader.CopyTo(file_stream);
                                                                 }
                                                             }
-                                                            catch
+                                                            catch (Exception exc)
                                                             {
-                                                                //
+                                                                Console.Error.WriteLine(exc.Message);
                                                             }
                                                         }
                                                     }
@@ -420,10 +406,10 @@ namespace UpdaterNET
                         is_canceled = true;
                     }
                 }
-                catch (Exception _e)
+                catch (Exception ex)
                 {
                     is_canceled = true;
-                    error = _e.Message;
+                    error = ex.Message;
                 }
             }
             UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(is_canceled, error));

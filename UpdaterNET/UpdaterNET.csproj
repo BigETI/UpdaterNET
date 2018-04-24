@@ -45,10 +45,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GitHubLatestReleaseDataContract.cs" />
+    <Compile Include="GitHubReleaseAssetDataContract.cs" />
+    <Compile Include="GitHubUpdateTask.cs" />
+    <Compile Include="GitHubUserDataContract.cs" />
     <Compile Include="UpdateTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UpdateDataContract.cs" />
     <Compile Include="UpdateTaskFinishedEventArgs.cs" />
+    <Compile Include="UpdateTaskFinishedEventHandler.cs" />
     <Compile Include="WebClientEx.cs">
       <SubType>Component</SubType>
     </Compile>

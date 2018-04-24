@@ -138,9 +138,9 @@ namespace UpdateMakerNET
                     }
                 }
             }
-            catch (Exception _e)
+            catch (Exception ex)
             {
-                MessageBox.Show(_e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             string error = null;
             UpdateTask.GenerateUpdateJSON(destination_directory + "update.json", exeFileSingleLineTextField.Text, archive_path, urlSingleLineTextField.Text, ref error);
@@ -163,6 +163,53 @@ namespace UpdateMakerNET
                 if (files.ContainsKey(key))
                 {
                     exeFileSingleLineTextField.Text = files[key];
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set as executable tool strip menu item click event
+        /// </summary>
+        /// <param name="sender">Sender</param>
+        /// <param name="e">Event arguments</param>
+        private void setAsExecutableToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in filesListView.SelectedItems)
+            {
+                string key = item.Text;
+                if (files.ContainsKey(key))
+                {
+                    exeFileSingleLineTextField.Text = files[key];
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rename entry tool strip menu item click event
+        /// </summary>
+        /// <param name="sender">Sender</param>
+        /// <param name="e">Event arguments</param>
+        private void renameEntryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in filesListView.SelectedItems)
+            {
+                string key = item.Text;
+                if (files.ContainsKey(key))
+                {
+                    RenameEntryForm rename_entry_form = new RenameEntryForm(key);
+                    DialogResult result = rename_entry_form.ShowDialog();
+                    DialogResult = DialogResult.None;
+                    if (result == DialogResult.OK)
+                    {
+                        if (!(files.ContainsKey(rename_entry_form.EntryName)))
+                        {
+                            files[rename_entry_form.EntryName] = files[key];
+                            files.Remove(key);
+                            ReloadEntries();
+                        }
+                    }
                     break;
                 }
             }
