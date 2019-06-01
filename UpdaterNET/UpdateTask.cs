@@ -170,7 +170,7 @@ namespace UpdaterNET
                 }
                 catch (Exception e)
                 {
-                    UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(true, e.Message));
+                    UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(true, e.ToString()));
                 }
             }
         }
@@ -237,7 +237,7 @@ namespace UpdaterNET
             }
             catch (Exception e)
             {
-                error = e.Message;
+                error = e.ToString();
             }
             return ret;
         }
@@ -275,7 +275,7 @@ namespace UpdaterNET
         private void OnDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
             bool is_canceled = e.Cancelled;
-            string error = ((e.Error == null) ? null : e.Error.Message);
+            string error = ((e.Error == null) ? null : e.Error.ToString());
             if ((!is_canceled) && (error == null))
             {
                 try
@@ -344,7 +344,7 @@ namespace UpdaterNET
                                                     }
                                                     catch (Exception ex)
                                                     {
-                                                        Console.Error.WriteLine(ex.Message);
+                                                        Console.Error.WriteLine(ex);
                                                     }
                                                 }
                                             }
@@ -353,7 +353,7 @@ namespace UpdaterNET
                                     catch (Exception ex)
                                     {
                                         // Revert changes
-                                        Console.Error.WriteLine(ex.Message);
+                                        Console.Error.WriteLine(ex);
                                         try
                                         {
                                             if (File.Exists(backup_file_name))
@@ -374,7 +374,7 @@ namespace UpdaterNET
                                                             }
                                                             catch (Exception exc)
                                                             {
-                                                                Console.Error.WriteLine(exc.Message);
+                                                                Console.Error.WriteLine(exc);
                                                             }
                                                         }
                                                     }
@@ -409,7 +409,7 @@ namespace UpdaterNET
                 catch (Exception ex)
                 {
                     is_canceled = true;
-                    error = ex.Message;
+                    error = ex.ToString();
                 }
             }
             UpdateTaskFinished.Invoke(this, new UpdateTaskFinishedEventArgs(is_canceled, error));

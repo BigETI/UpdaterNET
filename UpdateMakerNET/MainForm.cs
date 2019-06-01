@@ -140,12 +140,14 @@ namespace UpdateMakerNET
             }
             catch (Exception ex)
             {
+                Console.Error.WriteLine(ex);
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             string error = null;
             UpdateTask.GenerateUpdateJSON(destination_directory + "update.json", exeFileSingleLineTextField.Text, archive_path, urlSingleLineTextField.Text, ref error);
             if (error != null)
             {
+                Console.Error.WriteLine(error);
                 MessageBox.Show(error, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
